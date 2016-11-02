@@ -100,7 +100,6 @@ select * from focal_users;
 alter table focal_results 
 add column days_played int;
 
-
 #can't index on column of medium text or long text 
 alter table focal_results 
 change column user_account_id user_account_id varchar(12)
@@ -127,9 +126,6 @@ where user_account_id
 
 select * from focal_users order by results_count desc;
 select * from focal_users where results_count is null; 
-
-
-
 
 
 select user_account_id, year(round_start_date), 
