@@ -50,10 +50,12 @@ users$upgrade_time <- ifelse(users$bf3prem != nulldate, users$bf3prem - users$bf
 
 #regress (bf3prem - bf3) on product_owned_count_at_start
 
-xyplot(product_owned_at_start ~ upgrade_time), data = users,
-  xlab = "Products owned when buying Battlefield 3",
-  ylab = "Length of time to upgrade to BF 3 Premium",
+plot(users$product_owned_count_at_start[users$bf3prem != nulldate], users$upgrade_time[users$bf3prem != nulldate],
+xlab = "Products owned when buying Battlefield 3",
+ylab = "Length of time to upgrade to BF 3 Premium",
 )
+
+
 
 #possible indicator of loyalty may be Signup_date? 
 
