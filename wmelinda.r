@@ -1,3 +1,59 @@
+#load data
+focal.users = read.csv("~/#UPenn/#WUDAC Consulting/focal_users.csv")
+focal.results = read.csv("~/#UPenn/#WUDAC Consulting/focal_results.csv")
+
+#clean data 
+focal.users$Country_Code <- NULL 
+focal.users$User_Age <- NULL 
+focal.users$Gender_Code <- NULL 
+focal.users$Signup_Date[which(focal.users$Signup_Date == '2001-01-01')]= NA
+focal.users$bf3[which(focal.users$bf3 == '2001-01-01')]= NA
+focal.users$bf3prem[which(focal.users$bf3prem == "2001-01-01")]= NA
+focal.users$bf4[which(focal.users$bf4 == "2001-01-01")]= NA
+focal.users$bfbc2[which(focal.users$bfbc2 == "2001-01-01")]= NA
+
+
+#find intensive players - product count - range 1-63 
+#convert factors to numerics 
+focal.users$User_Account_ID <- as.numeric(as.character(focal.users$User_Account_ID))
+focal.users$Product_Owned_Cnt <- as.numeric(as.character(focal.users$Product_Owned_Cnt))
+focal.users$product_owned_count_at_start <- as.numeric(as.character(focal.users$product_owned_count_at_start))
+#find products bought over time (since first GAME played of bf3)
+focal.users$proddiff <- with(focal.users, Product_Owned_Cnt - product_owned_count_at_start)
+#find difference in dates (assuming first GAME played is @bf3)
+#change factors to dates 
+focal.results$round_start_date <- as.Date(focal.results$round_start_date, format = "%Y-%m-%d")
+#find minimum date for each user 
+
+#
+
+#make a histogram of the distribution 
+hist(focal.users$proddiff, 
+     main= "Histogram of Users Buying History",
+     xlab = "Products bought since Signup"),
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+------------------------------------------------------------------------------------------------------
 I ended up using SQL ! (FYI) 
 
 #create database
