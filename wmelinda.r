@@ -6,11 +6,16 @@ focal.results = read.csv("~/#UPenn/#WUDAC Consulting/focal_results.csv")
 focal.users$Country_Code <- NULL 
 focal.users$User_Age <- NULL 
 focal.users$Gender_Code <- NULL 
-focal.users$Signup_Date[which(focal.users$Signup_Date == '2001-01-01')]= NA
-focal.users$bf3[which(focal.users$bf3 == '2001-01-01')]= NA
-focal.users$bf3prem[which(focal.users$bf3prem == "2001-01-01")]= NA
-focal.users$bf4[which(focal.users$bf4 == "2001-01-01")]= NA
-focal.users$bfbc2[which(focal.users$bfbc2 == "2001-01-01")]= NA
+focal.users$Signup_Date[which(focal.users$Signup_Date == '2000-01-01')]= NA
+focal.users$bf3[which(focal.users$bf3 == '2000-01-01')]= NA
+focal.users$bf3prem[which(focal.users$bf3prem == "2000-01-01")]= NA
+focal.users$bf4[which(focal.users$bf4 == "2000-01-01")]= NA
+focal.users$bfbc2[which(focal.users$bfbc2 == "2000-01-01")]= NA
+#between focal users vs focal results - focal results only has 611 unique ids, focal users has 1309 ids 
+user.id <- unique(focal.users$User_Account_ID)
+user.id.results <- unique(focal.results$user_account_id)
+
+
 
 
 #find intensive players - product count - range 1-63 
@@ -24,16 +29,35 @@ focal.users$proddiff <- with(focal.users, Product_Owned_Cnt - product_owned_coun
 #change factors to dates 
 focal.results$round_start_date <- as.Date(focal.results$round_start_date, format = "%Y-%m-%d")
 #find minimum date for each user 
+bf3.start <- setNames(aggregate.data.frame(focal.results$round_start_date, list(focal.results$user_account_id), function(x) min(as.character(x)) ), c("user_account_id", "bf3_start"))
+#calculate days played - insert list of end date (march 4, 2014)
+bf3.start$end_date <- rep("2014-03-04", length(bf3.start$bf3_start))
+#calculate date diff 
+bf3.start$days_start <- as.Date(as.character(bf3.start$end_date)) - as.Date(as.character(bf3.start$bf3_start))
+#calculate avg rate each user purchased products - combine the columns 
+bf3.products <- merge(bf3.start, focal.users, by.x = "user_account_id", by.y = "User_Account_ID", all.x = TRUE)
+#calculate prod / yr
+bf3.products$prod_yr <- (bf3.products$proddiff / as.numeric(bf3.products$days_start)) * 365
 
-#
+#look at the distribution of the data - round data to make graphing easier 
+bf3.products$prod_round <- round(bf3.products$prod_yr, digits = 0)
+hist(bf3.products$prod_round, breaks = 20, main = "Distribution of Product Rates", xlab = "Product Rates")
 
-#make a histogram of the distribution 
-hist(focal.users$proddiff, 
-     main= "Histogram of Users Buying History",
-     xlab = "Products bought since Signup"),
+#split into two groups that can be compared - instead of basing on cohorts, want casual v intense 
+#611 entries, so median is at 306
+order.bf3.products<- bf3.products[order(bf3.products$prod_round),]
+#median falls into the 3-range 
+order.bf3.products[301:311,]
+#we'll split the data into [0,3] and [3,20] - matches distribution 
 
 
 
+
+#find premium users 
+#compare prem v non-prem user 
+focal.users$prem <- ifelse(is.na(focal.users$bf3prem), 0, 1)
+#split into groups - those with premium, those without 
+games<-as.data.frame(table(focal.results$user_account_id))
 
 
 
@@ -54,93 +78,7 @@ hist(focal.users$proddiff,
 
 
 ------------------------------------------------------------------------------------------------------
-I ended up using SQL ! (FYI) 
-
-#create database
-create database wudac;
-use wudac;
-
-#create table
-create table focal_users (
-wcai_cohort varchar(10), user_account_id varchar(100), country_code varchar(5), signup_date datetime, user_age int(100), gender_code varchar(10), 
-product_owned_cnt int(100), bf3 datetime, bf3_platform varchar(10), bf3prem datetime, bf4 datetime, bfbc2 datetime, ps3_platform_activity_flag varchar(5), 
-xbox360_platform_activity_flag varchar(5), pc_platform_activity_flag varchar(5), product_owned_count_at_start int(100));
-select * from focal_users;
-
-#load data into table 
-load data local infile 
-'/Users/wmelinda/Documents/#UPenn/#WUDAC Consulting/focal_users.csv'
-into table focal_users
-fields terminated by ',' 
-optionally enclosed by '''' 
-lines terminated by '\n'
-ignore 1 lines
-(@wcai_cohort, @user_account_id, @country_code, @signup_date, @user_age, @gender_code, @product_owned_cnt, @bf3, @bf3_platform, @bf3prem, @bf4, @bfbc2, 
-@ps3_platform_activity_flag, @xbox360_platform_activity_flag, @pc_platform_activity_flag, @product_owned_count_at_start)
-set 
-wcai_cohort = nullif(@wcai_cohort, ''), user_account_id = nullif(@user_account_id, ''), country_code = nullif(@country_code, ''), 
-signup_date = str_to_date(nullif(@signup_date, '2000-01-01'),'%Y-%m-%d'), user_age = nullif(@user_age, ''), 
-gender_code = nullif(@gender_code, ''), product_owned_cnt = nullif(@product_owned_cnt, ''), 
-bf3 = str_to_date(nullif(@bf3, '2000-01-01'),'%Y-%m-%d'), bf3_platform = nullif(@bf3_platform, ''), 
-bf3prem = str_to_date(nullif(@bf3prem, '2000-01-01'),'%Y-%m-%d'), bf4 = str_to_date(nullif(@bf4, '2000-01-01'),'%Y-%m-%d'), 
-bfbc2 = str_to_date(nullif(@bfbc2, '2000-01-01'),'%Y-%m-%d'), 
-ps3_platform_activity_flag = nullif(@ps3_platform_activity_flag, ''), 
-xbox360_platform_activity_flag = nullif(@xbox360_platform_activity_flag, ''), 
-pc_platform_activity_flag = nullif(@pc_platform_activity_flag, ''), 
-product_owned_count_at_start = nullif(@product_owned_count_at_start, '');
-select * from focal_users;
-truncate focal_users;
-#remove bad data 
-#self-entered data - age, gender, country = not reliable 
-#date of 2000-01-01 is never good 
-
-#create table
-create table focal_results (
-wcai_cohort varchar(10), user_account_id varchar(10000000), perona_id int, 
-round_id varchar(100000000), player_id int, round_start_date datetime, 
-player_seconds decimal(10,4), rank_at_start int, rank_at_end int, total_score int, 
-combat_score int, killcnt int, deathcnt int, assultflg int, reconflg int, 
-engineerflg int, supportflg int, armoredlandflg int, unarmoredlandflg int, 
-jetflg int, helicopterflg int, boatflg int, servername varchar(10000000), 
-gamemode varchar(1000000000), round_seconds decimal(10,4), roundcomplete int, 
-maxsimultaneousplayersallowed int, maxsimultaneousplayers int, uniqueplayers int, 
-initialplayers int, nth_day_of_play int, team int, teamcount int, winningteam int, 
-attackerteam int, deathsperteama int, deathsperteamb int, 
-objectiveswonperteama int, objectiveswonperteamb int, levelname varchar(1000000));
-select * from focal_results;
-#load data into table 
-load data local infile 
-'/Users/wmelinda/Documents/#UPenn/#WUDAC Consulting/focal_results.csv'
-into table focal_results
-fields terminated by ',' 
-optionally enclosed by '''' 
-lines terminated by '\n'
-ignore 1 lines; 
-
-select * from focal_results;
-
-#find 'intensive' players #####################################################################################
-#based on product count - range 1-63 
-alter table focal_users
-add column end_date datetime not null 
-default '2014-03-04';
-select * from focal_users;
-
-select user_account_id, (product_owned_cnt - product_owned_count_at_start ) * 100/ datediff(end_date, bf3)
-from focal_users
-group by user_account_id;
-
-#Compare prem v non-prem user ################################################################################
-select user_account_id,  
-sum(if(bf3prem is NULL, 1, 0))'NA',
-sum(if(bf3prem is not NULL, 1, 0)) 'Premium'
-from focal_users;
-
-alter table focal_users 
-add column premium int; 
-
-update focal_users 
-set premium = if(bf3prem is not null, 1, 0); 
+Old SQL code
 
 #See distributions of gameplay freq ###########################################################################
 #premium v non prem users 
