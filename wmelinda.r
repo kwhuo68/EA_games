@@ -60,6 +60,12 @@ focal.users$prem <- ifelse(is.na(focal.users$bf3prem), 0, 1)
 games<-as.data.frame(table(focal.results$user_account_id))
 
 
+  
+  
+  
+  #find gameplay frequency & compare with 'intensive' & 'premium' 
+#find the days played/days when started to play 
+
 
 
 
