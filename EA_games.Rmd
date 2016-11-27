@@ -1,0 +1,66 @@
+---
+title: "EA Games Report"
+author: "WUDAC Project Team"
+date: "November 26, 2016"
+output: pdf_document
+---
+
+# Introduction
+Our team wanted to look at determining what factors explain and retain customer profitability for EA's Battlefield game. To do this, we looked at several factors (and constructed our own). They fall into the categories described below.  
+
+## User Play
+
+## ELO Ranking System
+
+## Frequency and User Participation
+
+## Loyalty
+
+
+
+# Data Description and Cleaning
+We were given 1309 unique user ID's and 732,702 unique game rounds of data to look at. TODO: Fill out. 
+
+```{r, echo=FALSE}
+rm(list=ls()) # Remove all the existing variables
+setwd("~/Documents/Penn 2016-2017/WUDAC/EA_games") #my directory
+
+users = read.csv("focal_users.csv")
+results = read.csv("focal_results.csv")
+
+summary(users)
+summary(results)
+```
+
+# Exploration
+
+## User Play
+
+## ELO Ranking System
+
+## Frequency and User Participation
+
+## Loyalty
+
+
+# Analysis
+
+## User Play
+
+## ELO Ranking System
+
+## Frequency and User Participation
+
+## Loyalty
+
+
+# Takeaways 
+
+## User Play
+
+## ELO Ranking System
+
+## Frequency and User Participation
+
+## Loyalty
+
