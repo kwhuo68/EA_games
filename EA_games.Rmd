@@ -31,19 +31,25 @@ results = read.csv("focal_results.csv")
 summary(users)
 summary(results)
 ```
+
 Country, Age, and Gender are all self-reported, so not necessarily accurate. 
+
 ```focal.users$Country_Code <- NULL 
 focal.users$User_Age <- NULL 
 focal.users$Gender_Code <- NULL 
 ```
+
 It was stated that the date '2000-01-01' should not be analyzed - this is equivalent to an NA. 
+
 ```focal.users$Signup_Date[which(focal.users$Signup_Date == '2000-01-01')]= NA
 focal.users$bf3[which(focal.users$bf3 == '2000-01-01')]= NA
 focal.users$bf3prem[which(focal.users$bf3prem == "2000-01-01")]= NA611
 focal.users$bf4[which(focal.users$bf4 == "2000-01-01")]= NA
 focal.users$bfbc2[which(focal.users$bfbc2 == "2000-01-01")]= NA
 ```
+
 Something to note - focal results only has 611 unique ids, focal users has 1309 ids. So, any analysis that merges user and results data is only considering 611 out of the 1309 ids. 
+
 ```
 user.id <- unique(focal.users$User_Account_ID)
 user.id.results <- unique(focal.results$user_account_id)
