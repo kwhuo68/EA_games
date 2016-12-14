@@ -57,123 +57,68 @@ order.bf3.products[301:311,]
 #compare prem v non-prem user 
 focal.users$prem <- ifelse(is.na(focal.users$bf3prem), 0, 1)
 #split into groups - those with premium, those without 
-games<-as.data.frame(table(focal.results$user_account_id))
 
 
-  
-  
-  
-  #find gameplay frequency & compare with 'intensive' & 'premium' 
+
+#find gameplay frequency & compare with 'intensive' & 'premium' 
+
 #find the days played/days when started to play 
+#first calculate total games played by userID 
+games.played <- as.data.frame(table(focal.results$user_account_id))
+#connect length of play with days played 
+games.days <- merge(games.played, bf3.start, by.x = "Var1", by.y = "user_account_id", all.x = TRUE)
+#find freq of games/year
+as.numeric(games.days$days_start)
+games.days$games_freq <- games.days$Freq * 365 / games.days$days_start
 
+#compare distribution of freq with 'intensive' 
+#combine data with product data 
+games.intensive <- merge(games.days, order.bf3.products, by.x = "Var1", by.y = "user_account_id", all.x = TRUE)
+#make a scatterplot with prods vs game freq 
+plot(order.bf3.products$prod_yr, games.days$games_freq, main="Intensity v Frequency", col = ifelse(order.bf3.products$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="Games/Year")
+#not a strong relationship between games/year and products bought/year 
+#check correlation
+cor(games.intensive$prod_yr, y=games.intensive$games_freq, use = "complete.obs")
+#cor = .08823461 = not a very strong correlation / relationship between the two 
+#check boxplots
+games.intensive$intensive <- ifelse(games.intensive$prod_yr > 3, 1, 0)
+boxplot(games.intensive$games_freq~ games.intensive$intensive, data = games_nint, main="Distribution of Games/Year by Products", xlab="Product", ylab="Games/Year")
+#doesn't seem to be super different, can check statistical significance 
+games_nint <- subset(games.intensive, games.intensive$prod_yr < 3.000000001)
+games_int <- subset(games.intensive, games.intensive$prod_yr > 3)
+t.test(games_nint$games_freq, games_int$games_freq)
+#Welch Two Sample t-test
+#data:  games_nint$games_freq and games_int$games_freq
+#t = -1.0905, df = 441.76, p-value = 0.2761
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  -1.9762331  0.5657782
+#sample estimates:
+ # mean of x mean of y 
+#5.801720  6.506948 
+#fail to reject null hypothesis, there is not a statistically significant difference between 'intensive' players v freq of gameplay
 
+#compare distribution of freq with 'premium' 
+#combine data with premium data 
+games.prem <- merge(games.days, focal.users, by.x = "Var1", by.y = "User_Account_ID", all.x = TRUE)
+#split two boxplots depending on prem v non-prem 
+boxplot(games.prem$games_freq ~ games.prem$prem, data = games.prem, main="Distribution of Games/Year by Premium", 
+        +         xlab="Premium", ylab="Games/Year")
+#premium users do play more games (on average)!! larger skew, larger median. 
+#there is a relationship between buying premium and playing more games 
+#is the difference statistically significant? 
+games_nprem <- subset(games.prem, games.prem$prem == 0)
+games_prem <- subset(games.prem, games.prem$prem == 1)
+#two-sample diff in means t test 
+t.test(games_nprem$games_freq, games_prem$games_freq)
+#data:  games_nprem$games_freq and games_prem$games_freq
+#t = -8.7259, df = 442.8, p-value < 2.2e-16
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+ # -6.028561 -3.812147
+#sample estimates:
+#  mean of x mean of y 
+#3.781417  8.701771 
+#p-value is smaller than alpha (.05), so we reject the null hypothesis that the means between prem v non-prem are the same; so our data is statistically significant
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-------------------------------------------------------------------------------------------------------
-Old SQL code
-
-#See distributions of gameplay freq ###########################################################################
-#premium v non prem users 
-
-alter table focal_users 
-add column bf3_played int;
-
-update focal_users
-set bf3_played = datediff(end_date, bf3);
-
-select * from focal_users;
-
-alter table focal_results 
-add column days_played int;
-
-#can't index on column of medium text or long text 
-alter table focal_results 
-change column user_account_id user_account_id varchar(12)
-alter table focal_results 
-add index user_account_id (user_account_id);
-alter table focal_users 
-change column user_account_id user_account_id varchar(12)
-alter table focal_users 
-add index user_account_id (user_account_id);
-
-select user_account_id, count(*) 
-from focal_results 
-group by user_account_id;
-
-alter table focal_users
-add column results_count int; 
-
-update focal_users u
-set results_count = (select count(*) 
-from focal_results r
-where r.user_account_id = u.user_account_id
-group by u.user_account_id)
-where user_account_id 
-
-select * from focal_users order by results_count desc;
-select * from focal_users where results_count is null; 
-
-
-select user_account_id, year(round_start_date), 
-month(round_start_date), week(round_start_date), dayname(round_start_date), count(*)
-from focal_results 
-group by user_account_id, week(round_start_date), dayname(round_start_date)
-order by;
-######################## FIX LATER VVVVVVVVVVVVVVVVVV
-create table focal_results_per_day (
-select user_account_id, week(round_start_date), dayname(round_start_date), count(*)
-from focal_results 
-group by user_account_id, week(round_start_date), dayname(round_start_date)
-order by );
-
-select * from focal_results_per_day; 
-
-
-#testing days_played numbers
-select user_account_id, count(user_account_id) from focal_results 
-group by user_account_id;
-#trying to make a new column ----- HELP!!!!!!
-insert into focal_results (days_played) 
-(select count(user_account_id) from focal_results
-group by user_account_id);
-#this is fine 
-alter table focal_results 
-add column bf3_played int;
-#joined
-UPDATE focal_results r
-  INNER JOIN focal_users u ON u.user_account_id = r.user_account_id
-SET r.bf3_played = u.bf3_played;
-
-select * from focal_results;
-#This doesn't run, also bc days_played is not set
-update focal_results 
-set total_freq = (days_played * 100 )/bf3_played;
-#see if people with premium play more overall than people without (freq = buying products?) 
-select r.total freq, u.premium from focal_results r 
-inner join focal_users u on u.user_account_id = r.user_account_id
-group by r.user_account_id
-
-#look into more specifc freq 
-
-#finding avg days between game rounds?? 
-select user_account_id, round_start_date from focal_results 
-group by user_account_id;
-
-select r.user_account_id, 
-sum(if(round_start_date =
-group by r.user_account_id; 
-
+#can be used to influence advertising strategy - don't necessarily push for other products, can encourage more premium purchases more 
