@@ -63,6 +63,35 @@ user.id.results <- unique(focal.results$user_account_id)
 ## ELO Ranking System
 
 ## Frequency and User Participation
+Goal: define 'intensive' players = determined by product count 
+First, in order to analyze the data, convert factors to numerics 
+```
+focal.users$User_Account_ID <- as.numeric(as.character(focal.users$User_Account_ID))
+focal.users$Product_Owned_Cnt <- as.numeric(as.character(focal.users$Product_Owned_Cnt))
+focal.users$product_owned_count_at_start <- as.numeric(as.character(focal.users$product_owned_count_at_start))
+```
+Find the number of products bought over time (start = first GAME played of bf3, end = March 4, 2014) ; Products/Year
+```
+focal.users$proddiff <- with(focal.users, Product_Owned_Cnt - product_owned_count_at_start)
+focal.results$round_start_date <- as.Date(focal.results$round_start_date, format = "%Y-%m-%d")
+bf3.start <- setNames(aggregate.data.frame(focal.results$round_start_date, list(focal.results$user_account_id), function(x) min(as.character(x)) ), c("user_account_id", "bf3_start"))
+bf3.start$end_date <- rep("2014-03-04", length(bf3.start$bf3_start))
+bf3.start$days_start <- as.Date(as.character(bf3.start$end_date)) - as.Date(as.character(bf3.start$bf3_start))
+bf3.products <- merge(bf3.start, focal.users, by.x = "user_account_id", by.y = "User_Account_ID", all.x = TRUE)
+bf3.products$prod_yr <- (bf3.products$proddiff / as.numeric(bf3.products$days_start)) * 365
+```
+Round data and look at the distribution 
+```
+bf3.products$prod_round <- round(bf3.products$prod_yr, digits = 0)
+hist(bf3.products$prod_round, breaks = 20, main = "Distribution of Product Rates", xlab = "Product Rates")
+```
+Split intensive [0, 3] v non-intensive [3, 20] 
+Will use this as a comparison instead of cohorts 1 v 2 
+
+Goal: find premium players 
+```
+focal.users$prem <- ifelse(is.na(focal.users$bf3prem), 0, 1)
+```
 
 ## Loyalty
 
