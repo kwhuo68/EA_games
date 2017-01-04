@@ -68,14 +68,23 @@ games.played <- as.data.frame(table(focal.results$user_account_id))
 #connect length of play with days played 
 games.days <- merge(games.played, bf3.start, by.x = "Var1", by.y = "user_account_id", all.x = TRUE)
 #find freq of games/year
-as.numeric(games.days$days_start)
+games.days$days_start <- as.numeric(games.days$days_start)
 games.days$games_freq <- games.days$Freq * 365 / games.days$days_start
+
+#following Pareto principle? 
+#check if top 20% of intensive players account for 80% of the gameplay frequency
+#out of the 611 intensive players, top 20% = top 122 players 
+pareto <- order.bf3.products[order(order.bf3.products$prod_yr,decreasing=TRUE)[1:122],] 
+#subset # of rounds that have the same user ids 
+pareto.rounds <- merge(focal.results, pareto, by.x = "user_account_id", by.y = "user_account_id", all.y = TRUE)
+#this becomes 1800 out of 7895, which is = approx. 22.8% 
+#this does not follow the Pareto principle 
 
 #compare distribution of freq with 'intensive' 
 #combine data with product data 
 games.intensive <- merge(games.days, order.bf3.products, by.x = "Var1", by.y = "user_account_id", all.x = TRUE)
 #make a scatterplot with prods vs game freq 
-plot(order.bf3.products$prod_yr, games.days$games_freq, main="Intensity v Frequency", col = ifelse(order.bf3.products$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="Games/Year")
+plot(games.intensive$prod_yr, games.intensive$games_freq, main="Intensity v Frequency", col = ifelse(games.intensive$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="Games/Year")
 #not a strong relationship between games/year and products bought/year 
 #check correlation
 cor(games.intensive$prod_yr, y=games.intensive$games_freq, use = "complete.obs")
@@ -102,8 +111,7 @@ t.test(games_nint$games_freq, games_int$games_freq)
 #combine data with premium data 
 games.prem <- merge(games.days, focal.users, by.x = "Var1", by.y = "User_Account_ID", all.x = TRUE)
 #split two boxplots depending on prem v non-prem 
-boxplot(games.prem$games_freq ~ games.prem$prem, data = games.prem, main="Distribution of Games/Year by Premium", 
-        +         xlab="Premium", ylab="Games/Year")
+boxplot(games.prem$games_freq ~ games.prem$prem, data = games.prem, main="Distribution of Games/Year by Premium", xlab="Premium", ylab="Games/Year")
 #premium users do play more games (on average)!! larger skew, larger median. 
 #there is a relationship between buying premium and playing more games 
 #is the difference statistically significant? 
@@ -122,3 +130,100 @@ t.test(games_nprem$games_freq, games_prem$games_freq)
 #p-value is smaller than alpha (.05), so we reject the null hypothesis that the means between prem v non-prem are the same; so our data is statistically significant
 
 #can be used to influence advertising strategy - don't necessarily push for other products, can encourage more premium purchases more 
+
+#find engagement/round 
+#subset roundtime data 
+round_time <- as.data.frame(cbind(focal.results$user_account_id, focal.results$player_seconds, focal.results$round_seconds))
+#find % of active play each round 
+round_time$play_time <- with(round_time, V2 * 100 /V3)
+#calculate the aggregate active play for each user
+play.mean <- aggregate(play_time ~ V1, round_time, mean)
+play.median <- aggregate(play_time ~ V1, round_time, median)
+play.stat <- merge(play.mean, play.median, by.x = "V1", by.y = "V1", all.x = TRUE)
+play.intensive <- merge(order.bf3.products, play.stat, by.x = "user_account_id", by.y = "V1", all.y = TRUE)
+
+#intensity v mean active play 
+plot(play.intensive$prod_yr, play.intensive$play_time.x, main="Intensity v Mean Active Play", col = ifelse(games.intensive$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="% Active Play")
+#intensity v median active play 
+plot(play.intensive$prod_yr, play.intensive$play_time.y, main="Intensity v Median Active Play", col = ifelse(games.intensive$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="% Active Play")
+#not a strong relationship between % active play and products/year 
+cor(play.intensive$prod_yr, y=play.intensive$play_time.x, use = "complete.obs")
+#cor = -0.01237227 = slightly negative relationship 
+cor(play.intensive$prod_yr, y=play.intensive$play_time.y, use = "complete.obs")
+#cor = 0.002219681 = slightly positive relationship 
+#check boxplots - mean
+play.intensive$intensive <- ifelse(play.intensive$prod_yr > 3, 1, 0)
+boxplot(play.intensive$play_time.x~ play.intensive$intensive, data = games_nint, main="Distribution of Mean Active Play by Products", xlab="Product", ylab="% Active Play")
+#check boxplots - median 
+play.intensive$intensive <- ifelse(play.intensive$prod_yr > 3, 1, 0)
+boxplot(play.intensive$play_time.y ~ play.intensive$intensive, data = games_nint, main="Distribution of Median Active Play by Products", xlab="Product", ylab="% Active Play")
+#boxplots do not seem to be very different, can check statistical significance 
+#mean 
+play_nint <- subset(play.intensive, play.intensive$prod_yr < 3.000000001)
+play_int <- subset(play.intensive, play.intensive$prod_yr > 3)
+t.test(play_nint$play_time.x, play_int$play_time.x)
+#Welch Two Sample t-test
+#data:  play_nint$play_time.x and play_int$play_time.x
+#t = 0.060502, df = 414.2, p-value = 0.9518
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  -2.783780  2.960585
+#sample estimates:
+#  mean of x mean of y 
+#61.43685  61.34844 
+#p-value is greater than alpha (.05), so we fail to reject the null hypothesis and there is not a significant difference 
+#median 
+play_nint <- subset(play.intensive, play.intensive$prod_yr < 3.000000001)
+play_int <- subset(play.intensive, play.intensive$prod_yr > 3)
+t.test(play_nint$play_time.y, play_int$play_time.y)
+#Welch Two Sample t-test
+#data:  play_nint$play_time.y and play_int$play_time.y
+#t = 0.1707, df = 407.22, p-value = 0.8645
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  -3.205042  3.814589
+#sample estimates:
+#  mean of x mean of y 
+#66.18686  65.88209 
+#p-value is greater than alpha (.05), so we fail to reject the null hypothesis and there is not a significant difference 
+
+#premium v active play 
+play.prem <- merge(play.stat, focal.users, by.x = "V1", by.y = "User_Account_ID", all.x = TRUE)
+#split two boxplots depending on prem v non-prem 
+#mean
+boxplot(play.prem$play_time.x ~ play.prem$prem, data = play.prem, main="Distribution of Active Play by Premium", xlab="Premium", ylab="% Active Play")
+#premium users do tend to be more active players (on average), and the data is not as skewed to lower activity as non-premium players
+#median
+boxplot(play.prem$play_time.y ~ play.prem$prem, data = play.prem, main="Distribution of Active Play by Premium", xlab="Premium", ylab="% Active Play")
+#premium users do tend to be more active players (on average), and the data is not as skewed to lower activity as non-premium players
+#difference is more distinct than when looking at means 
+#is the difference statistically significant? 
+play_nprem <- subset(play.prem, play.prem$prem == 0)
+play_prem <- subset(play.prem, play.prem$prem == 1)
+#two-sample diff in means t test 
+#mean
+t.test(play_nprem$play_time.x, play_prem$play_time.x)
+#Welch Two Sample t-test
+#data:  play_nprem$play_time.x and play_prem$play_time.x
+#t = -1.4602, df = 605.76, p-value = 0.1447
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  -4.3259870  0.6363156
+#sample estimates:
+#  mean of x mean of y 
+#60.38660  62.23144 
+#p-value is greater than alpha (.05), so we fail to reject the null hypothesis and the difference is not statistically significant
+#median
+t.test(play_nprem$play_time.y, play_prem$play_time.y)
+#Welch Two Sample t-test
+#data:  play_nprem$play_time.y and play_prem$play_time.y
+#t = -2.6384, df = 603.86, p-value = 0.008544
+#alternative hypothesis: true difference in means is not equal to 0
+#95 percent confidence interval:
+#  -7.204386 -1.055873
+#sample estimates:
+#  mean of x mean of y 
+#63.80993  67.94006 
+#p-value is less than alpha (.05), therefore the difference is statistically significant between premium and non-premium users. 
+
+#conclusion: the marketing strategy can also continue to push premium towards users who have been more active in games. 
