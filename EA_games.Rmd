@@ -63,15 +63,11 @@ user.id.results <- unique(focal.results$user_account_id)
 ## ELO Ranking System
 
 ## Frequency and User Participation
-Goal: define 'intensive' players = determined by product count 
-First, in order to analyze the data, convert factors to numerics 
+We defined 'intensive' players as those who bought a higher-than-average amount of products (dependent on the days they have owned bf3). We calculated the number of products bought over time (assuming a uniform purchase pattern - not accounting for bundles/package products) and found the number of purhcased products/year. 
 ```
 focal.users$User_Account_ID <- as.numeric(as.character(focal.users$User_Account_ID))
 focal.users$Product_Owned_Cnt <- as.numeric(as.character(focal.users$Product_Owned_Cnt))
 focal.users$product_owned_count_at_start <- as.numeric(as.character(focal.users$product_owned_count_at_start))
-```
-Find the number of products bought over time (start = first GAME played of bf3, end = March 4, 2014) ; Products/Year
-```
 focal.users$proddiff <- with(focal.users, Product_Owned_Cnt - product_owned_count_at_start)
 focal.results$round_start_date <- as.Date(focal.results$round_start_date, format = "%Y-%m-%d")
 bf3.start <- setNames(aggregate.data.frame(focal.results$round_start_date, list(focal.results$user_account_id), function(x) min(as.character(x)) ), c("user_account_id", "bf3_start"))
@@ -80,15 +76,12 @@ bf3.start$days_start <- as.Date(as.character(bf3.start$end_date)) - as.Date(as.c
 bf3.products <- merge(bf3.start, focal.users, by.x = "user_account_id", by.y = "User_Account_ID", all.x = TRUE)
 bf3.products$prod_yr <- (bf3.products$proddiff / as.numeric(bf3.products$days_start)) * 365
 ```
-Round data and look at the distribution 
+Because the median number of products is 3, we will split non-intensive [0, 3] and intensive (3, 20]. We will use this as a comparison instead of cohorts 1 v 2. 
 ```
 bf3.products$prod_round <- round(bf3.products$prod_yr, digits = 0)
 hist(bf3.products$prod_round, breaks = 20, main = "Distribution of Product Rates", xlab = "Product Rates")
 ```
-Split intensive [0, 3] v non-intensive [3, 20] 
-Will use this as a comparison instead of cohorts 1 v 2 
-
-Goal: find premium players 
+We also decided to split players depending on whether they purchased premium or not (did not take into account the date of purchase).  
 ```
 focal.users$prem <- ifelse(is.na(focal.users$bf3prem), 0, 1)
 ```
@@ -103,6 +96,151 @@ focal.users$prem <- ifelse(is.na(focal.users$bf3prem), 0, 1)
 ## ELO Ranking System
 
 ## Frequency and User Participation
+### Frequency
+To find the general frequency of play per user, we subsetted the data by user and then calculated the average number of games played per year. This does not take into account specific player patterns, but serves as more general data. 
+```
+games.played <- as.data.frame(table(focal.results$user_account_id))
+games.days <- merge(games.played, bf3.start, by.x = "Var1", by.y = "user_account_id", all.x = TRUE)
+games.days$days_start <- as.numeric(games.days$days_start)
+games.days$games_freq <- games.days$Freq * 365 / games.days$days_start
+```
+We then compared game frequency between the non-intensive and intensive players. 
+```
+games.intensive <- merge(games.days, order.bf3.products, by.x = "Var1", by.y = "user_account_id", all.x = TRUE)
+```
+The scatterplot and correlation reveal a weak positive relationship (correlation = .08823461). 
+```
+plot(games.intensive$prod_yr, games.intensive$games_freq, main="Intensity v Frequency", col = ifelse(games.intensive$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="Games/Year")
+cor(games.intensive$prod_yr, y=games.intensive$games_freq, use = "complete.obs")
+```
+***scatterplot*** 
+
+
+
+
+
+We also used boxplots to compare the distribution of the data between the two groups, and used t-tests to determine if the difference was statistically significant. 
+```
+games.intensive$intensive <- ifelse(games.intensive$prod_yr > 3, 1, 0)
+boxplot(games.intensive$games_freq~ games.intensive$intensive, data = games_nint, main="Distribution of Games/Year by Products", xlab="Product", ylab="Games/Year")
+games_nint <- subset(games.intensive, games.intensive$prod_yr < 3.000000001)
+games_int <- subset(games.intensive, games.intensive$prod_yr > 3)
+t.test(games_nint$games_freq, games_int$games_freq)
+```
+***boxplot*** 
+
+
+
+
+
+Welch Two Sample t-test
+data:  games_nint$games_freq and games_int$games_freq
+t = -1.0905, df = 441.76, p-value = 0.2761
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+  -1.9762331  0.5657782
+sample estimates:
+mean of x mean of y 
+5.801720  6.506948
+We fail to reject the null hypothesis, so the difference between 'intensive' players freq of gameplay and 'non-intensive' players freq of gameplay is not statistically significant. 
+
+We then compared game frequency of the premium and non-premium users. We used boxplots and t-tests to determine if the difference in game frequency was statistically significant. 
+```
+games.prem <- merge(games.days, focal.users, by.x = "Var1", by.y = "User_Account_ID", all.x = TRUE)
+boxplot(games.prem$games_freq ~ games.prem$prem, data = games.prem, main="Distribution of Games/Year by Premium", xlab="Premium", ylab="Games/Year")
+games_nprem <- subset(games.prem, games.prem$prem == 0)
+games_prem <- subset(games.prem, games.prem$prem == 1)
+t.test(games_nprem$games_freq, games_prem$games_freq)
+```
+***boxplot***
+
+
+
+
+
+Welch Two Sample t-test
+data:  games_nprem$games_freq and games_prem$games_freq
+t = -8.7259, df = 442.8, p-value < 2.2e-16
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+ -6.028561 -3.812147
+sample estimates:
+mean of x mean of y 
+3.781417  8.701771 
+The p-value is smaller than alpha (.05), so we reject the null hypothesis that the means between premium and non-premium are the same; so the difference is statistically significant. 
+
+### User Participation 
+We defined user participation as the average percentage of active play time each round per user. 
+```
+round_time <- as.data.frame(cbind(focal.results$user_account_id, focal.results$player_seconds, focal.results$round_seconds))
+round_time$play_time <- with(round_time, V2 * 100 /V3)
+play.mean <- aggregate(play_time ~ V1, round_time, mean)
+play.median <- aggregate(play_time ~ V1, round_time, median)
+play.stat <- merge(play.mean, play.median, by.x = "V1", by.y = "V1", all.x = TRUE)
+play.intensive <- merge(order.bf3.products, play.stat, by.x = "user_account_id", by.y = "V1", all.y = TRUE)
+```
+We then used medians to compare user participation between intensive and non-intensive players. The scatterplot and correlation reveal a weak positive relationship (correlation = .002219681). 
+```
+plot(play.intensive$prod_yr, play.intensive$play_time.y, main="Intensity v Median Active Play", col = ifelse(games.intensive$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="% Active Play")
+cor(play.intensive$prod_yr, y=play.intensive$play_time.y, use = "complete.obs")
+```
+***scatterplot*** 
+
+
+
+
+
+We also used boxplots to compare the distribution of the data between the two groups, and used t-tests to determine if the difference was statistically significant. 
+```
+play.intensive$intensive <- ifelse(play.intensive$prod_yr > 3, 1, 0)
+boxplot(play.intensive$play_time.y ~ play.intensive$intensive, data = games_nint, main="Distribution of Median Active Play by Products", xlab="Product", ylab="% Active Play")
+play_nint <- subset(play.intensive, play.intensive$prod_yr < 3.000000001)
+play_int <- subset(play.intensive, play.intensive$prod_yr > 3)
+t.test(play_nint$play_time.y, play_int$play_time.y)
+```
+***boxplot***
+
+
+
+
+
+
+Welch Two Sample t-test
+data:  play_nint$play_time.y and play_int$play_time.y
+t = 0.1707, df = 407.22, p-value = 0.8645
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+-3.205042  3.814589
+sample estimates:
+mean of x mean of y 
+66.18686  65.88209 
+The p-value is greater than alpha (.05), so we fail to reject the null hypothesis and there is not a significant difference. 
+
+We then compared user participation of the premium and non-premium users. We used boxplots and t-tests to determine if the difference in user participation was statistically significant. 
+```
+play.prem <- merge(play.stat, focal.users, by.x = "V1", by.y = "User_Account_ID", all.x = TRUE)
+boxplot(play.prem$play_time.y ~ play.prem$prem, data = play.prem, main="Distribution of Active Play by Premium", xlab="Premium", ylab="% Active Play")
+play_nprem <- subset(play.prem, play.prem$prem == 0)
+play_prem <- subset(play.prem, play.prem$prem == 1)
+t.test(play_nprem$play_time.y, play_prem$play_time.y)
+```
+***boxplot*** 
+
+
+
+
+
+Welch Two Sample t-test
+data:  play_nprem$play_time.y and play_prem$play_time.y
+t = -2.6384, df = 603.86, p-value = 0.008544
+alternative hypothesis: true difference in means is not equal to 0
+95 percent confidence interval:
+-7.204386 -1.055873
+sample estimates:
+mean of x mean of y 
+63.80993  67.94006 
+
+The p-value is less than alpha (.05), therefore the difference is statistically significant between premium and non-premium users. 
 
 ## Loyalty
 
@@ -114,6 +252,11 @@ focal.users$prem <- ifelse(is.na(focal.users$bf3prem), 0, 1)
 ## ELO Ranking System
 
 ## Frequency and User Participation
+#can be used to influence advertising strategy - don't necessarily push for other products, can encourage more premium purchases more 
+#conclusion: the marketing strategy can also continue to push premium towards users who have been more active in games. 
+
+
+Things to consider: Paerto principle 
 
 ## Loyalty
 
