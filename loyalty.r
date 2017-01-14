@@ -85,11 +85,11 @@ lost_user_freq = split(lost_user, lost_user$User_Account_ID)
 
 #total_score
 
-#combat_score, killCnt, deathCnt, player score, 
+#killCnt / deathCnt ratio (within role)
 
-#whether team = winningTeam, 
+#win ratio
 
-#(average Total_score of players in the match - the player’s Total_score)
+#diversity of roles in matches
 
-#possible indicator of loyalty may be Signup_date? 
+#what roles they themselves play
 
