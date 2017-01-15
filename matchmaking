@@ -5,21 +5,14 @@ date: "December 9, 2016"
 output: word_document
 ---
 
+**Matchmaking Algorithm Design
+
+*Intro*
+
+Our goal: to use machine learning techniques to design more balanced matches
 
 
-What we learned:
- - use other methods
- - final recommendation telling to use MORE DATA
-
-**Intro**
-
-our idea, bla bla bla, get this shit together and predict team interaction
-
-
-**Data cleaning**
-
-
-First, crunch player statistics in standardized variables
+*Data cleaning*
 
 ```{r}
 rm(list=ls())
@@ -62,129 +55,13 @@ results$round_start_date = as.Date(results$round_start_date)
 #team count looks uninteresting 
 #completion seems useless
 #game mode seems to be better captured by other variables instead of using 17 indicators. Same for map, with 29 levels
-
-
-##make training player statistics table
-results$winner = as.factor(results$winner)
-dat = data.frame("player_id" = results$user_account_id)
-for(i in  1:length(results$user_account_id)){
-    dat$avg_score[i] = mean(results$total_score[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$avg_permanence[i] = mean(results$player_seconds[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])/
-    mean(results$round_seconds[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$avg_combat_score = mean(results$combat_score[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$avg_kd =  mean(results$killCnt[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])/ mean(results$deathCnt[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$rank = results$rank_at_end[i]
-  dat$assaultFlg = mean(results$assultFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$reconFlg = mean(results$reconFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$engineerFlg = mean(results$engineerFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$supportFlg = mean(results$supportFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$armoredLandFlg = mean(results$armoredLandFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$jetFlg = mean(results$jetFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$unarmoredLandFlg = mean(results$unarmoredLandFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$helicopterFlg = mean(results$helicopterFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$boatFlg = mean(results$boatFlg[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$attacker = mean(results$attacker[results$round_start_date <= results$round_start_date[i] 
-                            & results$user_account_id== results$user_account_id[i]])
-  dat$winner = results$winner[i]
-}
-dat <- do.call(data.frame,lapply(dat, function(x) replace(x, is.infinite(x),0)))
-dat[is.na(dat)] <- 0 
-
-index.train = sample(length(dat$player_id), 5000)
-dat.train=dat[index.train,]
-dat.test=dat[-index.train,]
-
 ```
 
-HOLY SHIT, THIS WAS SO BORING!
-From this, we develop a net to predict winning chance:
+*Matchmaking Profile*
+
+First attempt: player standardized profile
 
 ```{r}
-library(h2o)
-
-#start cluster
-localH2O <- h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
-
-#set h20 frames
-train.h2o <- as.h2o(dat.train[, -1])
-test.h2o <- as.h2o(dat.test[, -1])
-summary(results$winner)
-summary(dat.train$winner)
-names(test.h2o)
-
-############## how do we deal with all 1s
-
-#build model and train
-net.model = 
-  h2o.deeplearning(x = 1:15, y = 16,
-                   training_frame = train.h2o, validation_frame = test.h2o, standardize = TRUE,
-                   activation = "TanhWithDropout", seed = 10,
-                   input_dropout_ratio = 0.2,hidden_dropout_ratios = c(0.5,0.5,0.5),
-                   hidden = c(50,50,50),epochs = 100, categorical_encoding = "Binary")
-
-#reports
-net.model
-
-## Using the DNN model for predictions
-h2o_yhat_test <- h2o.predict(model, test_h2o)
-
-## Converting H2O format into data frame
-df_yhat_test <- as.data.frame(h2o_yhat_test)
-
-```
-
-
-ALL METHODS:
-  - random forest
-  - pca
-  - rotation forest
-  - support vector machine
-  - maxent
-  - deep learning
-
-
-
-Next, let's get the TEAM STATISTICS.
-
-```{r}
-
-#our problem
-
-length(unique(results$round_id))/length(results$round_id)
-# 99.7% unique results!
-
-##subsetting: 5897 obs. 
-set.seed(10)
-index.train = sample(length(unique(results$round_id)), 5000)
-results=results[index.train,]
-results.test=results[-index.train,]
-length(unique(results$round_id))
-
-#make new team dataset by summing by round AND team
-team.train = data.frame("round_id" = unique(results$round_id))
-team.train
-
-```
-
-
-
-```{r}
-
 ##make training player statistics table
 #id
 individual.train = data.frame("id" = unique(results.train$user_account_id))
@@ -244,3 +121,123 @@ individual.test <- do.call(data.frame,lapply(individual.test, function(x) replac
 individual.test[is.na(individual.test)] <- 0     
 
 ```
+
+Second attempt: adding time variation to predictions
+```{r} 
+##make training player statistics table
+results$winner = as.factor(results$winner)
+dat = data.frame("player_id" = results$user_account_id)
+for(i in  1:length(results$user_account_id)){
+    dat$avg_score[i] = mean(results$total_score[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$avg_permanence[i] = mean(results$player_seconds[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])/
+    mean(results$round_seconds[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$avg_combat_score = mean(results$combat_score[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$avg_kd =  mean(results$killCnt[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])/ mean(results$deathCnt[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$rank = results$rank_at_end[i]
+  dat$assaultFlg = mean(results$assultFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$reconFlg = mean(results$reconFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$engineerFlg = mean(results$engineerFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$supportFlg = mean(results$supportFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$armoredLandFlg = mean(results$armoredLandFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$jetFlg = mean(results$jetFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$unarmoredLandFlg = mean(results$unarmoredLandFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$helicopterFlg = mean(results$helicopterFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$boatFlg = mean(results$boatFlg[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$attacker = mean(results$attacker[results$round_start_date <= results$round_start_date[i] 
+                            & results$user_account_id== results$user_account_id[i]])
+  dat$winner = results$winner[i]
+}
+dat <- do.call(data.frame,lapply(dat, function(x) replace(x, is.infinite(x),0)))
+dat[is.na(dat)] <- 0 
+
+index.train = sample(length(dat$player_id), 5000)
+dat.train=dat[index.train,]
+dat.test=dat[-index.train,]
+
+```
+
+
+*Modelling player skill*
+
+
+
+ALL METHODS:
+  - random forest
+  - pca
+  - rotation forest
+  - support vector machine
+  - maxent
+  - deep learning
+
+```{r}
+library(h2o)
+
+#start cluster
+localH2O <- h2o.init(ip = "localhost", port = 54321, startH2O = TRUE)
+
+#set h20 frames
+train.h2o <- as.h2o(dat.train[, -1])
+test.h2o <- as.h2o(dat.test[, -1])
+summary(results$winner)
+summary(dat.train$winner)
+names(test.h2o)
+
+############## how do we deal with all 1s
+
+#build model and train
+net.model = 
+  h2o.deeplearning(x = 1:15, y = 16,
+                   training_frame = train.h2o, validation_frame = test.h2o, standardize = TRUE,
+                   activation = "TanhWithDropout", seed = 10,
+                   input_dropout_ratio = 0.2,hidden_dropout_ratios = c(0.5,0.5,0.5),
+                   hidden = c(50,50,50),epochs = 100, categorical_encoding = "Binary")
+
+#reports
+net.model
+
+## Using the DNN model for predictions
+h2o_yhat_test <- h2o.predict(model, test_h2o)
+
+## Converting H2O format into data frame
+df_yhat_test <- as.data.frame(h2o_yhat_test)
+
+```
+
+
+*Representing team interaction*
+
+```{r}
+
+#our problem
+
+length(unique(results$round_id))/length(results$round_id)
+# 99.7% unique results!
+
+##subsetting: 5897 obs. 
+set.seed(10)
+index.train = sample(length(unique(results$round_id)), 5000)
+results=results[index.train,]
+results.test=results[-index.train,]
+length(unique(results$round_id))
+
+#make new team dataset by summing by round AND team
+team.train = data.frame("round_id" = unique(results$round_id))
+team.train
+
+```
+
