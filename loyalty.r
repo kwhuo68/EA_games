@@ -15,14 +15,7 @@ results$round_start_date <- as.Date(results$round_start_date)
 
 #Replace all incidences of 2000-01-01 with null
 nulldate <- as.Date("2000-01-01")
-#users[users == nulldate] <- NA
-#results[results == nulldate] <- NA
-  #this gives error, (list) object cannot be coerced to type 'double'
 
-  #See whether purchasing Battlefield 2 has any correlation with purchasing Battlefeld 3 premium or Battlefield 4
-franchise_loyal <- subset(users, bfbc2 != nulldate)
-franchise_new <- subset(users, bfbc2 = nulldate)
-  #is it better to subset or to add a new column of loyal vs. new?
 
   ##just assume ankit's work is true (found bf2 and number of products bought were strong indicators, so skip re-proving that relationship?
 
@@ -40,7 +33,6 @@ new_bought <- sum(franchise_new$bf3prem != nulldate | franchise_new$bf4 != nulld
 loyal_bought_percent <- loyal_bought/nrow(franchise_loyal)
 new_bought_percent <- new_bought/nrow(franchise_new)
 
-#NORMALIZE
 
 summary(franchise_loyal$other_purchases)
 summary(franchise_new$other_purchases)
@@ -85,13 +77,14 @@ lost_user_freq = split(lost_user, lost_user$User_Account_ID)
 
 
 #calculate match frequency from ankit's code
+#apply similar freq analysis used by melinda
 
 franchise_loyal_matches_kept = merge(franchise_loyal_kept, results, by = "User_Account_ID")
 franchise_loyal_matches_lost = merge(franchise_loyal_lost, results, by = "User_Account_ID")
 
 freq = franchise_loyal_matches %>% select(User_Account_ID, round_start_date) %>% arrange(User_Account_ID, round_start_date)
 user_freq = split(freq, freq$User_Account_ID)
-round_diff = lapply(user_freq, function(x) {tmp = diff(x$round_start_date) tmp })
+#round_diff = lapply(user_freq, function(x) {tmp = diff(x$round_start_date) tmp })
 mean_freq = lapply(round_diff, function(x) mean(as.numeric(x)))
 
 kept_user = franchise_loyal_matches_kept %>% select(User_Account_ID, round_start_date) %>% arrange(User_Account_ID, round_start_date)
@@ -111,7 +104,7 @@ raw_score_kept = franchise_loyal_matches_kept %>% select(User_Account_ID, total_
 raw_score_kept = subset(franchise_loyal_matches_kept, round_start_date < bf3prem & round_start_date < bf4, select = c(User_Account_ID, total_score)) %>% select(User_Account_ID, total_score) %>% arrange(User_Account_ID, total_score)
 user_score_kept = split(raw_score_kept, raw_score_kept$User_Account_ID)
 # list object cannot be coerced to type double:
-#   mean_score_kept = lapply(user_score_kept, function(x) mean(as.numeric(x)))
+#mean_score_kept = lapply(user_score_kept, function(x) mean(as.numeric(unlist(x))))
 
 raw_score_lost = franchise_loyal_matches_lost %>% select(User_Account_ID, total_score) %>% arrange(User_Account_ID, total_score)
 user_score_lost = split(score, score$User_Account_ID)
@@ -164,14 +157,7 @@ user_complete_lost = split(raw_complete_lost, raw_complete_lost$User_Account_ID)
 #diversity of roles of each player
 raw_roles_kept = subset(franchise_loyal_matches_kept, round_start_date < bf3prem & round_start_date < bf4, select = c(User_Account_ID, assaultFlg, reconFlg, engineerFlg, support Flg) %>% arrange(User_Account_ID)
 user_roles_kept = split(raw_roles_kept, raw_roles_kept$User_Account_ID)
-#sum_roles_kept = lapply(user_roles_kept, function(x) sum x$assaultFlg, x$reconFlg, x$engineerFlg, x$support Flg)
+#sum_roles_kept = lapply(user_roles_kept, function(x) as.data.frame(table(x$assaultFlg, x$reconFlg, x$engineerFlg, x$support Flg)))
 #var_roles_kept = lapply(sum_roles_kept, function (x) var(as.numeric(x)) )
 
-#sum the number of matches for each role, find the variance or std dev?
-
 raw_roles_lost = 
-
-
-plot signup date?
-
-
