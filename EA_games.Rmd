@@ -252,8 +252,9 @@ The p-value is less than alpha (.05), therefore the difference is statistically 
 ## ELO Ranking System
 
 ## Frequency and User Participation
-#can be used to influence advertising strategy - don't necessarily push for other products, can encourage more premium purchases more 
-#conclusion: the marketing strategy can also continue to push premium towards users who have been more active in games. 
+Based on the results, there is a statistically significant difference in game frequency between premium and non-premium users. In addition, there is a statistically significant difference in user participation between premium and non-premium users. This information can be used to influence advertising strategy - EA should not use space advertising for other products, and should encourage more premium purchases. 
+
+
 
 
 Things to consider: Paerto principle 
