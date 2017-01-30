@@ -113,12 +113,6 @@ The scatterplot and correlation reveal a weak positive relationship (correlation
 plot(games.intensive$prod_yr, games.intensive$games_freq, main="Intensity v Frequency", col = ifelse(games.intensive$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="Games/Year")
 cor(games.intensive$prod_yr, y=games.intensive$games_freq, use = "complete.obs")
 ```
-***scatterplot*** 
-
-
-
-
-
 We also used boxplots to compare the distribution of the data between the two groups, and used t-tests to determine if the difference was statistically significant. 
 ```
 games.intensive$intensive <- ifelse(games.intensive$prod_yr > 3, 1, 0)
@@ -127,12 +121,6 @@ games_nint <- subset(games.intensive, games.intensive$prod_yr < 3.000000001)
 games_int <- subset(games.intensive, games.intensive$prod_yr > 3)
 t.test(games_nint$games_freq, games_int$games_freq)
 ```
-***boxplot*** 
-
-
-
-
-
 Welch Two Sample t-test
 data:  games_nint$games_freq and games_int$games_freq
 t = -1.0905, df = 441.76, p-value = 0.2761
@@ -152,12 +140,6 @@ games_nprem <- subset(games.prem, games.prem$prem == 0)
 games_prem <- subset(games.prem, games.prem$prem == 1)
 t.test(games_nprem$games_freq, games_prem$games_freq)
 ```
-***boxplot***
-
-
-
-
-
 Welch Two Sample t-test
 data:  games_nprem$games_freq and games_prem$games_freq
 t = -8.7259, df = 442.8, p-value < 2.2e-16
@@ -184,12 +166,6 @@ We then used medians to compare user participation between intensive and non-int
 plot(play.intensive$prod_yr, play.intensive$play_time.y, main="Intensity v Median Active Play", col = ifelse(games.intensive$prod_yr < 3.000000000001,'red','blue'), xlab="Products/Year ", ylab="% Active Play")
 cor(play.intensive$prod_yr, y=play.intensive$play_time.y, use = "complete.obs")
 ```
-***scatterplot*** 
-
-
-
-
-
 We also used boxplots to compare the distribution of the data between the two groups, and used t-tests to determine if the difference was statistically significant. 
 ```
 play.intensive$intensive <- ifelse(play.intensive$prod_yr > 3, 1, 0)
@@ -198,13 +174,6 @@ play_nint <- subset(play.intensive, play.intensive$prod_yr < 3.000000001)
 play_int <- subset(play.intensive, play.intensive$prod_yr > 3)
 t.test(play_nint$play_time.y, play_int$play_time.y)
 ```
-***boxplot***
-
-
-
-
-
-
 Welch Two Sample t-test
 data:  play_nint$play_time.y and play_int$play_time.y
 t = 0.1707, df = 407.22, p-value = 0.8645
@@ -224,12 +193,6 @@ play_nprem <- subset(play.prem, play.prem$prem == 0)
 play_prem <- subset(play.prem, play.prem$prem == 1)
 t.test(play_nprem$play_time.y, play_prem$play_time.y)
 ```
-***boxplot*** 
-
-
-
-
-
 Welch Two Sample t-test
 data:  play_nprem$play_time.y and play_prem$play_time.y
 t = -2.6384, df = 603.86, p-value = 0.008544
